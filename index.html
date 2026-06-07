@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="HTML Formatter - HTML代码格式化美化工具">
+<meta property="og:title" content="HTML Formatter">
+<meta property="og:description" content="在线HTML代码格式化/美化工具">
+<title>HTML Formatter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+header{background:#161b22;border-bottom:1px solid #30363d;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+header h1{font-size:20px;color:#58a6ff}
+.lang-switch{display:flex;gap:4px}
+.lang-switch button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.lang-switch button.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.btn{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.btn:hover{background:#30363d}
+.btn-primary{background:#238636;border-color:#238636;color:#fff}
+.btn-primary:hover{background:#2ea043}
+.options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:13px}
+.options label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.options input[type=number]{width:60px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px 8px;font-size:13px}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.panel-header{background:#21262d;padding:10px 16px;font-size:13px;font-weight:600;border-bottom:1px solid #30363d;color:#58a6ff}
+.panel textarea{width:100%;height:400px;background:#0d1117;color:#c9d1d9;border:none;padding:12px;font-family:'SF Mono',Monaco,monospace;font-size:13px;resize:vertical;line-height:1.5;tab-size:2}
+.panel textarea:focus{outline:none}
+.result{margin-top:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📝 HTML Formatter</h1>
+  <div class="lang-switch">
+    <button class="active" onclick="setLang('zh')">中文</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
+</header>
+<div class="container">
+  <div class="options">
+    <label>缩进 <input type="number" id="indent" value="2" min="1" max="8"></label>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="formatHTML()">✨ 格式化 / Format</button>
+    <button class="btn" onclick="minifyHTML()">📦 压缩 / Minify</button>
+    <button class="btn" onclick="copyOutput()">📋 复制 / Copy</button>
+    <button class="btn" onclick="clearAll()">🗑 清空 / Clear</button>
+  </div>
+  <div class="panel">
+    <div class="panel-header">输入 HTML / Input HTML</div>
+    <textarea id="input" placeholder="<html><body><div><p>Hello World</p></div></body></html>"></textarea>
+  </div>
+  <div class="panel result">
+    <div class="panel-header">输出 / Output</div>
+    <textarea id="output" readonly placeholder="格式化结果将在这里显示..."></textarea>
+  </div>
+</div>
+<script>
+let lang='zh';
+function setLang(l){lang=l;document.querySelectorAll('.lang-switch button').forEach((b,i)=>b.classList.toggle('active',(i===0&&l==='zh')||(i===1&&l==='en')))}
+function formatHTML(){
+  const input=document.getElementById('input').value.trim();
+  if(!input){document.getElementById('output').value=lang==='zh'?'请先输入HTML代码':'Please enter HTML first';return}
+  try{
+    const indent=parseInt(document.getElementById('indent').value)||2;
+    let formatted='';let depth=0;let i=0;
+    const voidEls=['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'];
+    while(i<input.length){
+      if(input[i]==='<'){
+        if(input[i+1]==='/'){
+          depth=Math.max(0,depth-1);
+          formatted+='\n'+' '.repeat(depth*indent);
+          let j=input.indexOf('>',i);
+          if(j===-1)j=input.length-1;
+          formatted+=input.substring(i,j+1);
+          i=j+1;
+        }else if(input[i+1]==='!'){
+          let j=input.indexOf('>',i);
+          if(j===-1)j=input.length-1;
+          formatted+='\n'+' '.repeat(depth*indent)+input.substring(i,j+1);
+          i=j+1;
+        }else{
+          formatted+='\n'+' '.repeat(depth*indent);
+          let j=input.indexOf('>',i);
+          if(j===-1)j=input.length-1;
+          let tag=input.substring(i+1,j).split(/\s/)[0].toLowerCase();
+          formatted+=input.substring(i,j+1);
+          if(!voidEls.includes(tag)&&!input.substring(i,j).endsWith('/'))depth++;
+          i=j+1;
+        }
+      }else{
+        let j=input.indexOf('<',i);
+        if(j===-1)j=input.length;
+        let text=input.substring(i,j).trim();
+        if(text)formatted+='\n'+' '.repeat(depth*indent)+text;
+        i=j;
+      }
+    }
+    document.getElementById('output').value=formatted.trimStart();
+  }catch(e){document.getElementById('output').value='Error: '+e.message}
+}
+function minifyHTML(){
+  const input=document.getElementById('input').value;
+  if(!input){document.getElementById('output').value=lang==='zh'?'请先输入HTML代码':'Please enter HTML first';return}
+  document.getElementById('output').value=input.replace(/\s+/g,' ').replace(/>\s+</g,'><').replace(/<!--.*?-->/g,'').trim();
+}
+function copyOutput(){
+  const o=document.getElementById('output');
+  o.select();document.execCommand('copy');
+  const btn=event.target;btn.textContent=lang==='zh'?'已复制！':'Copied!';setTimeout(()=>btn.textContent=lang==='zh'?'📋 复制':'📋 Copy',1500)
+}
+function clearAll(){document.getElementById('input').value='';document.getElementById('output').value=''}
+</script>
+</body>
+</html>
